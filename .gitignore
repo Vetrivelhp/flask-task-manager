@@ -1,0 +1,5 @@
+task_manager.db
+dumps/
+__pycache__/
+*.pyc
+.env

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Sign Up</title>
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@40,400,0,0&icon_names=visibility,visibility_off" />
+		<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	</head>
+
+	
+	<body>
+	<div class="auth-wrapper">
+		<div class="auth-card">
+	
+			<h2>Sign Up</h2>
+				<form method="POST">
+		
+						<label for="user_name">Create a Username</label>
+						<input type="text" id ="user_name" name="user" required="required"/>
+						
+						<label for="password">Create a Password</label>
+						<div class="password-wrapper">
+							<input 
+								type="password"
+								id="crt_password"
+								name="pass1"
+								required
+								pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$"
+								title="Minimum 8 characters, including uppercase, lowercase, number and symbol."
+							>
+						    <span class="toggle-password material-symbols-outlined">visibility</span>
+						</div>
+						<small id="password-hint">Password must contain 8 characters at least one uppercase, lowercase, number and symbol.</small>
+							
+						<label for="confirm_key">Confirm Password</label>
+						<input type="password" id ="confirm_key" name="pass2" required="required" oninput="check()"/>
+						
+						<button>Sign Up</button>
+
+						
+						<p>Already have an account? Please <a href="login">Login</a> here.</p>
+
+				</form>
+				<script>
+					function check(){
+						var input = document.getElementById("confirm_key");
+						if (input.value != document.getElementById("crt_password").value){
+							input.setCustomValidity("Passwords are not matching.");
+						} else {
+							input.setCustomValidity('');
+						}
+					
+					}
+					
+					const password = document.getElementById("crt_password");
+					const hint = document.getElementById("password-hint");
+
+					password.addEventListener("input", () => {
+						const strong = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+						if (strong.test(password.value)) {
+							hint.style.color = "green";
+						} else {
+							hint.style.color = "red";
+						}
+					});
+					
+					document.querySelectorAll(".toggle-password").forEach(icon => {
+						icon.addEventListener("click", () => {
+							const input = icon.previousElementSibling;
+
+							if (input.type === "password") {
+								input.type = "text";
+								icon.textContent = "visibility_off";
+							} else {
+								input.type = "password";
+								icon.textContent = "visibility";
+							}
+						});
+					});
+					
+				</script>
+		</div>
+	</div>
+	</body>
+</html>
