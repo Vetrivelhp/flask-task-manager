@@ -10,7 +10,8 @@ import re
 import os
 
 
-engine = create_engine("sqlite:///task_manager.db", connect_args={"check_same_thread": False})
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///task_manager.db")
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 Base = declarative_base()
 
 
@@ -412,4 +413,4 @@ def logout():
     return {"success": True}
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run()
