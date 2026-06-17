@@ -9,13 +9,11 @@ from contextlib import contextmanager
 import re
 import os
 
-
+app = Flask(__name__)
 DATABASE_URL = os.environ.get("DATABASE_URL")
 # Postgres Support Railway
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
-
 
 if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(
@@ -115,7 +113,7 @@ def get_db():
     finally:
         db.close()
 
-app = Flask(__name__)
+
 app.secret_key = os.environ.get("SECRET_KEY")
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 #Customize Password Hasher
