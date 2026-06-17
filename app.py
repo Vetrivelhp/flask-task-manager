@@ -15,10 +15,9 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-if DATABASE_URL.startswith("sqlite"):
-    engine = create_engine(
-        DATABASE_URL,
-        connect_args={"check_same_thread": False}
+if not DATABASE_URL:
+    raise RuntimeError(
+        "DATABASE_URL environment variable missing"
     )
 else:
     engine = create_engine(DATABASE_URL)
