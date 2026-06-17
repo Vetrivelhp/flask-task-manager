@@ -10,7 +10,8 @@ import re
 import os
 
 
-DATABASE_URL = os.environ.get("DATABASE_URL")if DATABASE_URL.startswith("sqlite"):
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
 if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(
         DATABASE_URL,
@@ -18,6 +19,7 @@ if DATABASE_URL.startswith("sqlite"):
     )
 else:
     engine = create_engine(DATABASE_URL)
+
 Base = declarative_base()
 
 
