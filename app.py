@@ -10,8 +10,14 @@ import re
 import os
 
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///task_manager.db")
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+DATABASE_URL = os.environ.get("DATABASE_URL")if DATABASE_URL.startswith("sqlite"):
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"check_same_thread": False}
+    )
+else:
+    engine = create_engine(DATABASE_URL)
 Base = declarative_base()
 
 
@@ -72,11 +78,12 @@ class Tasks(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-@event.listens_for(Engine, "connect")
-def enable_sqlite_fk(dbapi_connection, connection_record):
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
+if DATABASE_URL.startswith("sqlite"):
+    @event.listens_for(Engine, "connect")
+    def enable_sqlite_fk(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 
 
 #Create Table
@@ -102,7 +109,7 @@ def get_db():
         db.close()
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "dev_secret_key")
+app.secret_key = os.environ.get("SECRET_KEY")
 
 #Customize Password Hasher
 
