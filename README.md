@@ -77,7 +77,7 @@ task_manager/
 
 ```bash
 git clone https://github.com/Vetrivelhp/flask-task-manager.git
-cd task_manager
+cd flask-task-manager
 ```
 
 ## 2️⃣ Install dependencies
