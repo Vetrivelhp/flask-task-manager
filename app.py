@@ -33,7 +33,10 @@ else:
         DATABASE_URL,
         pool_size=5,
         max_overflow=10,
-        pool_pre_ping=True
+        pool_pre_ping=True,
+        pool_recycle=1800,
+        pool_timeout=30,
+        echo_pool="debug",
     )
 
 Base = declarative_base()
@@ -116,7 +119,10 @@ SessionLocal = sessionmaker(
 
 @contextmanager
 def get_db():
+    t = perf_counter() #perf
     db = SessionLocal()
+    print("Session create:", perf_counter() - t) #print
+
     try:
         yield db
         
