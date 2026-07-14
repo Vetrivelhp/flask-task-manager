@@ -10,6 +10,7 @@ import re
 import os
 from dotenv import load_dotenv
 load_dotenv()
+from time import perf_counter
 
 app = Flask(__name__)
 
@@ -118,7 +119,10 @@ def get_db():
     db = SessionLocal()
     try:
         yield db
+        
+        t = perf_counter()
         db.commit()
+        print("COMMIT:", perf_counter() - t)
     except:
         db.rollback()
         raise
@@ -242,6 +246,9 @@ def create_task():
         db.flush()  # get id without committing
 
         tasks = []
+        
+        t = perf_counter() #perf
+        
         for task_data in data["task_list"]:
             task = Tasks(
                 group_id=task_group.id,
@@ -251,9 +258,18 @@ def create_task():
             )
             tasks.append(task)
             client_map[task_data["client_id"]] = task
+        
+        print("Create first loop:", perf_counter() - t) #print
+        
+        t = perf_counter() #perf
+        
         db.add_all(tasks)
         db.flush()
-            
+
+        print("Flush:", perf_counter() - t) # print
+        
+        t = perf_counter() #perf
+        
         for task_data in data["task_list"]:
             parent_client = task_data.get("parent_client_id")
             if parent_client:
@@ -262,7 +278,9 @@ def create_task():
 
                 if parent_task and current_task:
                     current_task.parent_task_id = parent_task.id
-                    
+        
+        print("Parent linking:", perf_counter() - t) #print
+        
     return {
         "success": True,
         "id": task_group.id,
@@ -277,18 +295,23 @@ def send_tasks(id):
         user_id = session.get("user_id")
         if not user_id:
             return "Not Logged In!!!", 401
-            
+        #perf-counter    
+        t = perf_counter()    
         groups = db.query(TaskGroups).filter(
             TaskGroups.id == id,
             TaskGroups.user_id == user_id
         ).first()
         
+        print("Group query:", perf_counter() - t) #print
+        
         if not groups:
             return {"error": "Not found"}, 404
             
+        t = perf_counter() #perf
         tasks = db.query(Tasks).filter(
             Tasks.group_id == id
         ).order_by(Tasks.order_index.asc()).all()
+        print("Load tasks:", perf_counter() - t)
 
     return[{
         "id": t.id,
@@ -299,6 +322,7 @@ def send_tasks(id):
     
 @app.route('/api/edit/<int:id>', methods = ['PATCH'])
 def edit_tasks(id):
+    total = perf_counter()
     with get_db() as db:
         user_id = session.get("user_id")
         if not user_id:
@@ -331,6 +355,9 @@ def edit_tasks(id):
 
         client_map = {}
         tasks = []
+        
+        t = perf_counter() #perf
+        
         for task_data in data["task_list"]:
             task_id = task_data.get("id")
 
@@ -354,7 +381,11 @@ def edit_tasks(id):
                 client_map[task_data["client_id"]] = task
         db.add_all(tasks)
         db.flush()
-                    
+        
+        print("edit first loop:", perf_counter() - t) #print
+        
+        t = perf_counter() #perf
+        
         for task_data in data["task_list"]:
             current_task = client_map.get(task_data["client_id"])
             # Always reset
@@ -366,12 +397,19 @@ def edit_tasks(id):
                     current_task.parent_task_id = parent_task.id
 
             # DELETE removed tasks
+        
+        t = perf_counter()
+        
         for existing_id in existing_task_map:
             if existing_id not in incoming_ids:
                 db.delete(existing_task_map[existing_id])
+
+        print("Delete loop:", perf_counter() - t) #print
+        
+        print("edit second loop:", perf_counter() - t) #print
             
         print("Editing group:", id)
-
+    print("TOTAL:", perf_counter() - total)
     return {
         "success": True,
         "id": group.id,
