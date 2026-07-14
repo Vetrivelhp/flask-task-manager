@@ -9,6 +9,7 @@ from contextlib import contextmanager
 import re
 import os
 
+<<<<<<< HEAD
 app = Flask(__name__)
 DATABASE_URL = os.environ.get("DATABASE_URL")
 # Postgres Support Railway
@@ -22,6 +23,10 @@ if not DATABASE_URL:
 else:
     engine = create_engine(DATABASE_URL)
 
+=======
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///task_manager.db")
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+>>>>>>> 8c9adc9 (Fixed multiple DB queries, Optimized DB queries, removed unnecessary DB scans)
 Base = declarative_base()
 
 
@@ -213,48 +218,50 @@ def create_task():
         user_id = session.get("user_id")
         if not user_id:
             return "Not Logged In!!!", 401
-
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            session.clear()
-            return "Not Logged In!!!", 401
             
         data = request.json
         client_map = {}
         if not data["task_list"]:
             return "Cannot create empty task"
-      
+          
         task_group = TaskGroups(
             title = data["title"],
             description = data["description"],
             user_id = user_id
         )
-            
+                
         db.add(task_group)
         db.flush()  # get id without committing
-            
+
+        tasks = []
         for task_data in data["task_list"]:
-            new_task = Tasks(
+            task = Tasks(
                 group_id=task_group.id,
                 title=task_data["title"],
                 state=task_data["state"],
                 order_index=task_data["order_index"]
             )
-            db.add(new_task)
-            db.flush()
-            client_map[task_data["client_id"]] = new_task.id
-        
+            tasks.append(task)
+            client_map[task_data["client_id"]] = task
+        db.add_all(tasks)
+        db.flush()
+            
         for task_data in data["task_list"]:
             parent_client = task_data.get("parent_client_id")
             if parent_client:
-                real_parent_id = client_map.get(parent_client)
-                if real_parent_id:
-                    task = db.query(Tasks).filter(
-                        Tasks.id == client_map[task_data["client_id"]]
-                    ).first()
-                    task.parent_task_id = real_parent_id
+                parent_task = client_map.get(parent_client)
+                current_task = client_map.get(task_data["client_id"])
+
+                if parent_task and current_task:
+                    current_task.parent_task_id = parent_task.id
                     
-    return {"success": True}
+    return {
+        "success": True,
+        "id": task_group.id,
+        "title": task_group.title,
+        "description": task_group.description or "",
+        "created_at": task_group.created_at.strftime("%d %b %Y, %I:%M %p")
+    }
     
 @app.route('/api/tasks/<int:id>', methods = ['GET'])
 def send_tasks(id):
@@ -262,18 +269,15 @@ def send_tasks(id):
         user_id = session.get("user_id")
         if not user_id:
             return "Not Logged In!!!", 401
-
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            session.clear()
-            return "Not Logged In!!!", 401
-        
+            
         groups = db.query(TaskGroups).filter(
             TaskGroups.id == id,
             TaskGroups.user_id == user_id
         ).first()
         
-        
+        if not groups:
+            return {"error": "Not found"}, 404
+            
         tasks = db.query(Tasks).filter(
             Tasks.group_id == id
         ).order_by(Tasks.order_index.asc()).all()
@@ -291,31 +295,25 @@ def edit_tasks(id):
         user_id = session.get("user_id")
         if not user_id:
             return "Not Logged In!!!", 401
-
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            session.clear()
-            return "Not Logged In!!!", 401
-        
-        
+            
         data = request.json
-    
+       
         group = db.query(TaskGroups).filter(
             TaskGroups.id == id,
             TaskGroups.user_id == user_id
         ).first()
-        
+            
         if not group:
             return {"error": "Group not found"}, 404
-        
+            
         if not data["task_list"]:
             db.delete(group)
-            
+                
             return {"deleted": True}    
-        
+            
         group.title = data["title"]
         group.description = data["description"]
-        
+            
         existing_tasks = db.query(Tasks).filter(
             Tasks.group_id == id
         ).all()
@@ -324,7 +322,7 @@ def edit_tasks(id):
         incoming_ids = set()  
 
         client_map = {}
-
+        tasks = []
         for task_data in data["task_list"]:
             task_id = task_data.get("id")
 
@@ -335,39 +333,43 @@ def edit_tasks(id):
                 task.order_index = task_data["order_index"]
                 incoming_ids.add(int(task_id))
 
-                client_map[task_data["client_id"]] = task.id
+                client_map[task_data["client_id"]] = task
 
             else:
-                new_task = Tasks(
+                task = Tasks(
                     group_id=group.id,
                     title=task_data["title"],
                     state=task_data["state"],
                     order_index=task_data["order_index"]
                 )
-                db.add(new_task)
-                db.flush()
-
-                client_map[task_data["client_id"]] = new_task.id
-                
+                tasks.append(task)
+                client_map[task_data["client_id"]] = task
+        db.add_all(tasks)
+        db.flush()
+                    
         for task_data in data["task_list"]:
+            current_task = client_map.get(task_data["client_id"])
+            # Always reset
+            current_task.parent_task_id = None
             parent_client = task_data.get("parent_client_id")
-
             if parent_client:
-                real_parent_id = client_map.get(parent_client)
-                real_task_id = client_map.get(task_data["client_id"])
+                parent_task = client_map.get(parent_client)
+                if parent_task:
+                    current_task.parent_task_id = parent_task.id
 
-                if real_parent_id and real_task_id:
-                    task = db.query(Tasks).filter(Tasks.id == real_task_id).first()
-                    task.parent_task_id = real_parent_id
-
-        # DELETE removed tasks
+            # DELETE removed tasks
         for existing_id in existing_task_map:
             if existing_id not in incoming_ids:
                 db.delete(existing_task_map[existing_id])
-        
+            
         print("Editing group:", id)
 
-    return {"success": True}
+    return {
+        "success": True,
+        "id": group.id,
+        "title": group.title,
+        "description": group.description or ""
+    }
     
 @app.route('/api/delete/<int:id>', methods=['DELETE'])
 def delete_task(id):
@@ -375,20 +377,15 @@ def delete_task(id):
         user_id = session.get("user_id")
         if not user_id:
             return "Not Logged In!!!", 401
-
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            session.clear()
-            return "Not Logged In!!!", 401
             
         group = db.query(TaskGroups).filter(
             TaskGroups.id == id,
             TaskGroups.user_id == user_id
         ).first()
-        
+            
         if not group:
             return {"error": "Group not found"}, 404
-        
+            
         db.delete(group)
 
     return {"Deleted": True}
@@ -399,11 +396,6 @@ def get_groups():
     with get_db() as db:
         user_id = session.get("user_id")
         if not user_id:
-            return "Not Logged In!!!", 401
-
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            session.clear()
             return "Not Logged In!!!", 401
             
         groups = db.query(TaskGroups).filter(
@@ -424,4 +416,8 @@ def logout():
     return {"success": True}
 
 if __name__ == "__main__":
+<<<<<<< HEAD
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+=======
+    app.run(host='0.0.0.0', port=5000)
+>>>>>>> 8c9adc9 (Fixed multiple DB queries, Optimized DB queries, removed unnecessary DB scans)
