@@ -6,7 +6,7 @@ const all_tasks = document.getElementById("all_tasks");
 let defaultState = "check_box_outline_blank";
 let ongoingState = "indeterminate_check_box";
 let completeState = "check_box";
-	
+
 //calling loading tasks functionfrom database
 loadGroups();
 		
@@ -131,6 +131,7 @@ function createTaskElement(taskData = null, afterElement = null) {
 	// PARENT
 	if (taskData && taskData.parent_id) {
 		taskDiv.dataset.parentId = taskData.parent_id;
+		taskDiv.dataset.parentClientId = `db-${taskData.parent_id}`;
 		taskDiv.classList.add("child-task");
 	}
 			
@@ -168,6 +169,7 @@ function createTaskElement(taskData = null, afterElement = null) {
 			// Remove child
 			taskDiv.classList.remove("child-task");
 			taskDiv.classList.add("parent-task");
+			delete taskDiv.dataset.parentClientId;
 			delete taskDiv.dataset.parentId;
 		} else {
 			// Make child
@@ -176,6 +178,7 @@ function createTaskElement(taskData = null, afterElement = null) {
 			if (previous.dataset.clientId) {
 				taskDiv.dataset.parentClientId = previous.dataset.clientId;
 			} else {
+				delete taskDiv.dataset.parentClientId;
 				delete taskDiv.dataset.parentId;
 			}
 		}
@@ -225,6 +228,7 @@ function loadGroups() {
 						<small>${group.created_at}</small>			
 			`;
 			const card = document.createElement("div");
+			card.dataset.groupId = group.id; 
 			
 			div.addEventListener("click", () => {
 				editTask(group.id, group.title, group.description);
@@ -265,11 +269,15 @@ function loadGroups() {
 		
 function deleteTask(id, element) {
     element.classList.add("card-removing");
-
     setTimeout(() => {
         fetch(`/api/delete/${id}`, { method: "DELETE" })
         .then(res => res.json())
-        .then(data => loadGroups());
+        .then(() => {
+            element.remove(); 
+            if (document.querySelectorAll('.task_grid > div').length === 0) {
+                showEmptyState(); 
+            }
+        });
     }, 250);
 }
 		
@@ -298,10 +306,24 @@ function editTask(id, gtitle, gdescription, afterElement = null) {
 			create_page.appendChild(createTaskElement(task));
 		});
 				
+		const btn_row = document.createElement("div");
+		btn_row.classList.add("btn-row");
+
+		const back_btn = document.createElement("button");
+		back_btn.textContent = "Back";
+		back_btn.classList.add("back_button", "linux-btn");
+		back_btn.addEventListener("click", () => {
+			create_page.innerHTML = "";
+			showDashboard();
+		});
+
 		const save_task = document.createElement("button");
 		save_task.textContent = "Save";
 		save_task.classList.add("save_button", "linux-btn");
-		create_page.appendChild(save_task);	
+
+		btn_row.appendChild(back_btn);
+		btn_row.appendChild(save_task);
+		create_page.appendChild(btn_row);
 			
 		save_task.addEventListener("click", () => {
 			const task_arr = collectTasks();
@@ -321,13 +343,29 @@ function editTask(id, gtitle, gdescription, afterElement = null) {
 					
 			})
 			.then(res => res.json())
-			.then(task => {
-				console.log("Send", task)
-				loadGroups(); 
-			})			
-			//Show homepage hide new task page elements
-			showDashboard();		
-			create_page.innerHTML = ""; //clear create page					
+			.then(group => {
+				console.log("Send", group);
+				if (group.deleted) {
+					// group was emptied and deleted — remove the card
+					const card = document.querySelector(`[data-group-id="${id}"]`);
+					if (card) {
+						card.remove();
+						if (document.querySelectorAll('.task_grid > div').length === 0) {
+							showEmptyState();
+						}
+					}
+				} else {
+					// update just this card's text in place
+					const card = document.querySelector(`[data-group-id="${id}"]`);
+					if (card) {
+						card.querySelector('h3').textContent = group.title;
+						card.querySelector('p').textContent = group.description;
+					}
+				}
+				showDashboard();
+				create_page.innerHTML = "";
+			})		
+				
 		});				
 
 	});
@@ -352,10 +390,24 @@ function createNewTaskPage() {
 
 	addTask(); // create first task automatically
 			
+	const btn_row = document.createElement("div");
+	btn_row.classList.add("btn-row");
+
+	const back_btn = document.createElement("button");
+	back_btn.textContent = "Back";
+	back_btn.classList.add("back_button", "linux-btn");
+	back_btn.addEventListener("click", () => {
+		create_page.innerHTML = "";
+		showDashboard();
+	});
+
 	const save_task = document.createElement("button");
 	save_task.textContent = "Save";
 	save_task.classList.add("save_button", "linux-btn");
-	create_page.appendChild(save_task);
+
+	btn_row.appendChild(back_btn);
+	btn_row.appendChild(save_task);
+	create_page.appendChild(btn_row);
 			
 	function store_in_db() {
 		const task_arr = collectTasks();
@@ -374,18 +426,17 @@ function createNewTaskPage() {
 		body: JSON.stringify(inputData) //converting to JSON	
 		})
 		.then(res => res.json())
-		.then(task => {
-			console.log("Saved", task)
-			loadGroups();
+		.then(group => {
+			console.log("Saved", group);
+			showDashboard();
+			create_page.innerHTML = "";
+			prependGroupCard(group);
 		})
 	}
 
 	//saving task when click save button
 	save_task.addEventListener("click", () => {		
-		store_in_db();
-		//Show homepage hide new task page elements
-		showDashboard();
-		create_page.innerHTML = ""; //clear create page			
+		store_in_db();	
 	});
 }
 
@@ -398,7 +449,63 @@ function addTask(afterElement = null) {
 	}
 	newTask.querySelector(".task-input").focus();	
 }
-		
+	
+function prependGroupCard(group) {
+    // remove empty state if it's showing
+    const empty = all_tasks.querySelector('.empty-state');
+    if (empty) empty.remove();
+
+    // ensure the grid exists
+    let grid = all_tasks.querySelector('.task_grid');
+    if (!grid) {
+        grid = document.createElement('div');
+        grid.className = "task_grid";
+        all_tasks.appendChild(grid);
+    }
+
+    const card = document.createElement("div");
+    card.dataset.groupId = group.id;
+
+    const div = document.createElement('div');
+    div.innerHTML = `
+        <h3>${group.title}</h3>
+        <p>${group.description}</p>
+        <small>${group.created_at}</small>
+    `;
+
+    div.addEventListener("click", () => {
+        editTask(group.id, group.title, group.description);
+    });
+
+    const delButton = document.createElement("button");
+    delButton.classList.add("delete");
+    const delSpan = document.createElement("span");
+    delSpan.className = "material-symbols-outlined";
+    delSpan.textContent = "delete";
+    delButton.appendChild(delSpan);
+
+    delButton.addEventListener("click", (e) => {
+        e.stopPropagation();
+        deleteTask(group.id, card);
+    });
+
+    card.appendChild(div);
+    card.appendChild(delButton);
+    grid.prepend(card);  // newest first, matches created_at DESC order
+}
+
+function showEmptyState() {
+    all_tasks.innerHTML = "";
+    const empty = document.createElement("div");
+    empty.className = "empty-state fade-in";
+    empty.innerHTML = `
+        <div class="empty-icon"><img src="/static/images/cat.webp" alt="cat in box"></div>
+        <h2>No Tasks Yet</h2>
+        <p>Click the + button to create your first task group.</p>
+    `;
+    all_tasks.appendChild(empty);
+}
+	
 function logout() {
 	fetch("/logout")
 	.then(res => res.json())

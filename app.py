@@ -8,25 +8,28 @@ from argon2.exceptions import VerifyMismatchError, InvalidHash
 from contextlib import contextmanager
 import re
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
-<<<<<<< HEAD
 app = Flask(__name__)
-DATABASE_URL = os.environ.get("DATABASE_URL")
-# Postgres Support Railway
-if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-if not DATABASE_URL:
-    raise RuntimeError(
-        "DATABASE_URL environment variable missing"
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///task_manager.db")
+
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace(
+        "postgres://",
+        "postgresql://",
+        1
+    )
+
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"check_same_thread": False}
     )
 else:
     engine = create_engine(DATABASE_URL)
 
-=======
-DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///task_manager.db")
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
->>>>>>> 8c9adc9 (Fixed multiple DB queries, Optimized DB queries, removed unnecessary DB scans)
 Base = declarative_base()
 
 
@@ -416,8 +419,7 @@ def logout():
     return {"success": True}
 
 if __name__ == "__main__":
-<<<<<<< HEAD
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
-=======
-    app.run(host='0.0.0.0', port=5000)
->>>>>>> 8c9adc9 (Fixed multiple DB queries, Optimized DB queries, removed unnecessary DB scans)
+    app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 5000))
+    )

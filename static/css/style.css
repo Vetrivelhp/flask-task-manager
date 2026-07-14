@@ -179,10 +179,10 @@ body {
 .save_button {
     font-family: "Rubik", sans-serif;
     font-size: 1.3rem;
-    font-weight: 500;
+    font-weight: 450;
     padding: 0.4rem 1.3rem;
     border: none;
-    border-radius: 3px;
+    border-radius: 2px;
 
     background-color: #2f9429;
     color: white;
@@ -206,6 +206,28 @@ body {
 .save_button:active {
     transform: scale(0.97);
     box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.back_button {
+    font-family: "Rubik", sans-serif;
+    font-size: 1.3rem;
+    font-weight: 450;
+    padding: 0.4rem 1.3rem;
+    border: none;
+    border-radius: 2px;
+
+    background-color: #7393B3;
+    color: white;
+
+    cursor: pointer;
+    transition:
+        background-color 0.2s ease,
+        transform 0.08s ease,
+        box-shadow 0.2s ease;
+
+    margin-top: 1.5rem;
+	margin-left: 1rem;
+    align-self: flex-start;
 }
 
 
@@ -474,28 +496,38 @@ small {
 
 }
 
+.btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+
 @media (min-width: 1024px) {
 	.task-input {
-		font-size: 1.2em;
+		font-size: 1.4em;
 	}
 
 	.state .material-symbols-outlined {
-		font-size: 1.4rem;
+		font-size: 1.6rem;
 	}
 	
 	.drag .material-symbols-outlined {
-		font-size: 1.4rem;
+		font-size: 1.6rem;
 	}
 	
 	.td-input {
-		font-size: clamp(0.6rem, 3.3vw, 1.4rem);
+		font-size: clamp(0.6rem, 3.3vw, 1.6rem);
 	}
 	
 	.logout {
-		font-size: 0.7em;
+		font-size: 0.9em;
 	}
 	
 	.save_button {
-		font-size: 0.7em;
+		font-size: 0.9em;
+	}
+	
+	.back_button {
+		font-size: 0.9em;
 	}
 }
