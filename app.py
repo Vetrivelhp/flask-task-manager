@@ -28,7 +28,12 @@ if DATABASE_URL.startswith("sqlite"):
         connect_args={"check_same_thread": False}
     )
 else:
-    engine = create_engine(DATABASE_URL)
+    engine = create_engine(
+        DATABASE_URL,
+        pool_size=5,
+        max_overflow=10,
+        pool_pre_ping=True
+    )
 
 Base = declarative_base()
 
@@ -122,7 +127,7 @@ def get_db():
 
 
 app.secret_key = os.environ.get("SECRET_KEY")
-app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
+
 #Customize Password Hasher
 
 ph = PasswordHasher(

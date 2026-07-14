@@ -1,5 +1,6 @@
 body {
 	font-family: "Rubik", sans-serif;
+	overflow-x: hidden;
 }
 
 .child-task {
@@ -69,18 +70,12 @@ body {
 }
 
 .state .material-symbols-outlined {
-	font-size: 2.3rem;
+	font-size: 2rem;
 }
 
 .drag .material-symbols-outlined {
 	margin: auto;
-	font-size: 2.3rem;
-}
-
-
-
-.state:hover {
-
+	font-size: 2rem;
 }
 
 .delete {
@@ -131,8 +126,12 @@ body {
     flex-direction: column;
     gap: 0.8rem;
     min-height: 100dvh;
-    overflow-y: auto;	
+    overflow-y: auto;
+    overflow-x: hidden;
+
 }
+
+
 
 .td-input {
     width: 100%;
@@ -154,10 +153,10 @@ body {
 }
 
 .task-input {
-	font-size: 1.5em;
+	font-size: 1.35em;
 	width: 100%;
 	max-width: 500px;
-	height: 1.2em;
+
 	padding: 0.2em; 
 	border: none;
 	outline: none;
@@ -178,7 +177,7 @@ body {
 
 .save_button {
     font-family: "Rubik", sans-serif;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: 450;
     padding: 0.4rem 1.3rem;
     border: none;
@@ -210,7 +209,7 @@ body {
 
 .back_button {
     font-family: "Rubik", sans-serif;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: 450;
     padding: 0.4rem 1.3rem;
     border: none;
@@ -501,6 +500,29 @@ small {
     gap: 10px;
     margin-top: 8px;
 }
+
+.task-input {
+    -webkit-user-modify: read-write-plaintext-only;
+	appearence: none;
+	-webkit-appearence: none;
+}
+
+/* Removes the 'X' from Chrome, Safari, and newer Edge browsers */
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+  display: none;
+}
+
+/* Removes the 'X' from legacy Internet Explorer and Edge */
+input[type="search"]::-ms-clear,
+input[type="search"]::-ms-reveal {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 
 @media (min-width: 1024px) {
 	.task-input {

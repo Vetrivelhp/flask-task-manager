@@ -119,8 +119,18 @@ function createTaskElement(taskData = null, afterElement = null) {
 			
 	//creating task input
 	const input = document.createElement("input");
+	input.type = "search";
 	input.placeholder = "New task";
 	input.className = "task-input";
+	
+	input.setAttribute("autocomplete", "off");
+	input.setAttribute("autocorrect", "off");
+	input.setAttribute("autocapitalize", "off");
+	input.setAttribute("spellcheck", "false");
+	input.setAttribute("data-form-type", "other");
+	input.setAttribute("data-lpignore", "true");
+
+	
 	input.value = taskData ? taskData.title : "";
 			
 	// ID
@@ -229,9 +239,15 @@ function loadGroups() {
 			`;
 			const card = document.createElement("div");
 			card.dataset.groupId = group.id; 
+			card.dataset.currentTitle = group.title;          
+			card.dataset.currentDesc = group.description; 
 			
 			div.addEventListener("click", () => {
-				editTask(group.id, group.title, group.description);
+				editTask(
+					group.id,
+					card.dataset.currentTitle,
+					card.dataset.currentDesc
+				);
 			});
 			
 			const delButton = document.createElement("button");
@@ -287,14 +303,18 @@ function editTask(id, gtitle, gdescription, afterElement = null) {
 	create_page.innerHTML = "";
 	const title = document.createElement("input");
 	title.placeholder = "Title";
+	title.type = "search";
 	title.value = gtitle
 	title.classList.add("td-input");
 	title.classList.add("td-title");
 	const description = document.createElement("input");
 	description.placeholder = "Description";
+	description.type = "search";
 	description.value = gdescription
 	description.classList.add("td-input");
 	description.classList.add("td-desc");
+	title.autocomplete = "off";
+	description.autocomplete = "off";
 				
 	create_page.appendChild(title);
 	create_page.appendChild(description);
@@ -360,6 +380,8 @@ function editTask(id, gtitle, gdescription, afterElement = null) {
 					if (card) {
 						card.querySelector('h3').textContent = group.title;
 						card.querySelector('p').textContent = group.description;
+					    card.dataset.currentTitle = group.title;      
+						card.dataset.currentDesc = group.description; 
 					}
 				}
 				showDashboard();
@@ -378,12 +400,16 @@ function createNewTaskPage() {
 			
 	const title = document.createElement("input");
 	title.placeholder = "Title";
+	title.type = "search"
 	title.classList.add("td-input");
 	title.classList.add("td-title");
 	const description = document.createElement("input");
 	description.placeholder = "Description";
+	description.type = "search"
 	description.classList.add("td-input");
 	description.classList.add("td-desc");
+	title.autocomplete = "off";
+	description.autocomplete = "off";
 			
 	create_page.appendChild(title);
 	create_page.appendChild(description);
@@ -473,9 +499,16 @@ function prependGroupCard(group) {
         <small>${group.created_at}</small>
     `;
 
-    div.addEventListener("click", () => {
-        editTask(group.id, group.title, group.description);
-    });
+	card.dataset.currentTitle = group.title;
+	card.dataset.currentDesc = group.description;
+
+	div.addEventListener("click", () => {
+		editTask(
+			group.id,
+			card.dataset.currentTitle,
+			card.dataset.currentDesc
+		);
+	});
 
     const delButton = document.createElement("button");
     delButton.classList.add("delete");
