@@ -406,9 +406,15 @@ def edit_tasks(id):
         
         t = perf_counter()
         
-        for existing_id in existing_task_map:
-            if existing_id not in incoming_ids:
-                db.delete(existing_task_map[existing_id])
+        ids_to_delete = [
+            existing_id for existing_id in existing_task_map
+            if existing_id not in incoming_ids
+        ]
+
+        if ids_to_delete:
+            db.query(Tasks).filter(Tasks.id.in_(ids_to_delete)).delete(
+                synchronize_session=False
+            )
 
         print("Delete loop:", perf_counter() - t) #print
         
