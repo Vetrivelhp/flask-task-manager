@@ -11,8 +11,11 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 from time import perf_counter
+from whitenoise import WhiteNoise
+import time
 
 app = Flask(__name__)
+app.wsgi_app = WhiteNoise(app.wsgi_app, root='static/', prefix='static')    
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///task_manager.db")
 
@@ -33,10 +36,9 @@ else:
         DATABASE_URL,
         pool_size=5,
         max_overflow=10,
-        pool_pre_ping=True,
-        pool_recycle=1800,
+        pool_pre_ping=False, # removed pre polling causing network latency
+        pool_recycle=300,   #recycle every 5min
         pool_timeout=30,
-        echo_pool="debug",
     )
 
 Base = declarative_base()
@@ -109,7 +111,20 @@ if DATABASE_URL.startswith("sqlite"):
 
 #Create Table
 
-Base.metadata.create_all(engine)
+def create_tables_with_retry(retries=5, delay=2):
+    for attempt in range(retries):
+        try:
+            Base.metadata.create_all(engine)
+            print("Tables ready")
+            return
+        except Exception as e:
+            if attempt < retries - 1:
+                print(f"DB not ready, retrying in {delay}s... ({e})")
+                time.sleep(delay)
+            else:
+                raise
+
+create_tables_with_retry()
 
 SessionLocal = sessionmaker(
     bind=engine,
