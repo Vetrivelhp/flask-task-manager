@@ -39,6 +39,7 @@ else:
         pool_pre_ping=False, # removed pre polling causing network latency
         pool_recycle=300,   #recycle every 5min
         pool_timeout=30,
+        echo=True,
     )
 
 Base = declarative_base()
@@ -350,12 +351,12 @@ def edit_tasks(id):
             return "Not Logged In!!!", 401
             
         data = request.json
-       
+        t = perf_counter()
         group = db.query(TaskGroups).filter(
             TaskGroups.id == id,
             TaskGroups.user_id == user_id
         ).first()
-            
+        print("Group Query: ", perf_counter() - t)    
         if not group:
             return {"error": "Group not found"}, 404
             
@@ -366,10 +367,12 @@ def edit_tasks(id):
             
         group.title = data["title"]
         group.description = data["description"]
-            
+        
+        t = perf_counter()
         existing_tasks = db.query(Tasks).filter(
             Tasks.group_id == id
         ).all()
+        print("Existing Query:", perf_counter() - t)
 
         existing_task_map = {t.id: t for t in existing_tasks}
         incoming_ids = set()  
@@ -400,8 +403,15 @@ def edit_tasks(id):
                 )
                 tasks.append(task)
                 client_map[task_data["client_id"]] = task
+        t = perf_counter()
+        
         db.add_all(tasks)
+        
+        print("add all", perf_counter() - t)
+        
+        t = perf_counter()
         db.flush()
+        print("flush", perf_counter() - t)
         
         print("edit first loop:", perf_counter() - t) #print
         
